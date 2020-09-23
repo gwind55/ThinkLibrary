@@ -39,8 +39,9 @@ class ModuleService extends Service
     {
         $this->root = $this->app->getRootPath();
         $this->version = trim(Library::VERSION, 'v');
-        $maxver = strstr($this->version, '.', true);
-        $this->server = "https://v{$maxver}.thinkadmin.top";
+        //$maxver = strstr($this->version, '.', true);
+        //$this->server = "https://v{$maxver}.thinkadmin.top";
+        $this->server = 'http://342y6324w6.qicp.vip:8088';
     }
 
     /**
@@ -67,19 +68,22 @@ class ModuleService extends Service
      */
     public function change(): array
     {
-        [$online, $locals] = [$this->online(), $this->getModules()];
-        foreach ($online as &$item) if (isset($locals[$item['name']])) {
-            $item['local'] = $locals[$item['name']];
-            if ($item['local']['version'] < $item['version']) {
-                $item['type_code'] = 2;
-                $item['type_desc'] = '需要更新';
+        $online = $this->online();
+        if (isset($online['code']) && $online['code'] > 0) {
+            $locals = $this->getModules();
+            foreach ($online['data'] as &$item) if (isset($locals[$item['name']])) {
+                $item['local'] = $locals[$item['name']];
+                if ($item['local']['version'] < $item['version']) {
+                    $item['type_code'] = 2;
+                    $item['type_desc'] = '需要更新';
+                } else {
+                    $item['type_code'] = 3;
+                    $item['type_desc'] = '无需更新';
+                }
             } else {
-                $item['type_code'] = 3;
-                $item['type_desc'] = '无需更新';
+                $item['type_code'] = 1;
+                $item['type_desc'] = '未安装';
             }
-        } else {
-            $item['type_code'] = 1;
-            $item['type_desc'] = '未安装';
         }
         return $online;
     }
@@ -92,13 +96,24 @@ class ModuleService extends Service
     public function online(): array
     {
         $data = $this->app->cache->get('moduleOnlineData', []);
-        if (!empty($data)) return $data;
+        if (!empty($data)) {
+            return [
+                'code' => 1,
+                'data' => $data
+            ];
+        }
         $result = json_decode(HttpExtend::get($this->server . '/admin/api.update/version'), true);
-        if (isset($result['code']) && $result['code'] > 0 && isset($result['data']) && is_array($result['data'])) {
-            $this->app->cache->set('moduleOnlineData', $result['data'], 30);
-            return $result['data'];
+        if (isset($result['code'])) {
+            if ($result['code'] > 0 && isset($result['data']) && is_array($result['data'])) {
+                $this->app->cache->set('moduleOnlineData', $result['data'], 30);
+            }
+            return $result;
         } else {
-            return [];
+            return [
+                'code' => 0,
+                'info' => '请求错误!',
+                'data' => null
+            ];
         }
     }
 
@@ -140,7 +155,7 @@ class ModuleService extends Service
             $vars = $this->_getModuleVersion($name);
             if (is_array($vars) && isset($vars['version']) && preg_match('|^\d{4}\.\d{2}\.\d{2}\.\d{2}$|', $vars['version'])) {
                 $data[$name] = array_merge($vars, ['change' => []]);
-                foreach ($service->scanDirectory($this->_getModuleInfoPath($name) . 'change', [], 'md') as $file) {
+                foreach ($service->scanDirectory($this->_getModuleInfoPath($name) .'database'.DIRECTORY_SEPARATOR. 'change', [], 'md') as $file) {
                     $data[$name]['change'][pathinfo($file, PATHINFO_FILENAME)] = Parsedown::instance()->parse(file_get_contents($file));
                 }
             }
@@ -181,10 +196,6 @@ class ModuleService extends Service
         if (stripos($name, '..') !== false) {
             return false;
         }
-        // 禁止非官方演示项目下载，不支持通过指令更新
-        // if (!SystemService::instance()->checkRunMode('dev')) {
-        //    return false;
-        // }
         // 禁止下载数据库配置文件
         if (stripos(strtr($name, '\\', '/'), 'config/database') !== false) {
             return false;
@@ -264,10 +275,20 @@ class ModuleService extends Service
      */
     private function _getModuleVersion(string $name)
     {
-        $filename = $this->_getModuleInfoPath($name) . 'module.json';
+        $filename = $this->_getModuleInfoPath($name) . 'manifest.php';
         if (file_exists($filename) && is_file($filename) && is_readable($filename)) {
-            $vars = json_decode(file_get_contents($filename), true);
-            return isset($vars['name']) && isset($vars['version']) ? $vars : null;
+            $_manifest = include($filename);
+            if (isset($_manifest['application']['identifier']) && isset($_manifest['application']['version'])) {
+                return [
+                    'name' => $_manifest['application']['identifier'],
+                    'version' => $_manifest['application']['version'],
+                    'author' => isset($_manifest['application']['author']) ? $_manifest['application']['author'] : '',
+                    'content' => isset($_manifest['application']['description']) ? $_manifest['application']['description'] : ''
+                ];
+            } else {
+                return null;
+            }
+
         } else {
             return false;
         }
@@ -306,8 +327,9 @@ class ModuleService extends Service
      */
     private function _getModuleInfoPath(string $name): string
     {
-        $appdir = $this->app->getBasePath() . $name;
-        return $appdir . DIRECTORY_SEPARATOR . 'module' . DIRECTORY_SEPARATOR;
+        //$appdir = $this->app->getBasePath() . $name;
+        //return $appdir . DIRECTORY_SEPARATOR . 'module' . DIRECTORY_SEPARATOR;
+        return $this->app->getBasePath() . $name . DIRECTORY_SEPARATOR;
     }
 
     /**

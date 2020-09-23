@@ -173,9 +173,10 @@ class TokenService extends Service
                 unset($this->cachedata[$key]);
             }
         }
+        /*
         if (count($this->cachedata) > 99) {
             $this->cachedata = array_slice($this->cachedata, -99);
-        }
+        }*/
         return $this->cachedata;
     }
 }
