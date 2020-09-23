@@ -1,13 +1,13 @@
 {
   "type": "library",
-  "name": "zoujingli/think-library",
+  "name": "gwind55/think-library",
   "license": "MIT",
-  "homepage": "http://thinkadmin.top",
+  "homepage": "http://www.gwind55.com",
   "description": "ThinkPHP v6.0 Development Library",
   "authors": [
     {
-      "name": "Anyon",
-      "email": "zoujingli@qq.com"
+      "name": "大刘哥",
+      "email": "8396048@qq.com"
     }
   ],
   "require": {
