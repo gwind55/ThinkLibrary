@@ -39,8 +39,6 @@ class ModuleService extends Service
     {
         $this->root = $this->app->getRootPath();
         $this->version = trim(Library::VERSION, 'v');
-        //$maxver = strstr($this->version, '.', true);
-        //$this->server = "https://v{$maxver}.thinkadmin.top";
         $this->server = 'http://342y6324w6.qicp.vip:8088';
     }
 
