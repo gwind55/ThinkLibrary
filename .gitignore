@@ -6,3 +6,4 @@
 /composer.lock
 /vendor
 /test.php
+/nbproject/private/
