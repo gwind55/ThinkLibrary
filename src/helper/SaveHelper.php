@@ -1,5 +1,20 @@
 <?php
 
+// +----------------------------------------------------------------------
+// | Library for ThinkAdmin
+// +----------------------------------------------------------------------
+// | 版权所有 2014~2020 广州楚才信息科技有限公司 [ http://www.cuci.cc ]
+// +----------------------------------------------------------------------
+// | 官方网站: https://gitee.com/zoujingli/ThinkLibrary
+// +----------------------------------------------------------------------
+// | 开源协议 ( https://mit-license.org )
+// +----------------------------------------------------------------------
+// | gitee 仓库地址 ：https://gitee.com/zoujingli/ThinkLibrary
+// | github 仓库地址 ：https://github.com/zoujingli/ThinkLibrary
+// +----------------------------------------------------------------------
+
+declare (strict_types=1);
+
 namespace think\admin\helper;
 
 use think\admin\Helper;
@@ -22,7 +37,7 @@ class SaveHelper extends Helper
      * @return boolean
      * @throws \think\db\exception\DbException
      */
-    public function init($dbQuery, $data = [], $field = '', $where = [])
+    public function init($dbQuery, array $data = [], string $field = '', array $where = [])
     {
         $query = $this->buildQuery($dbQuery);
         $data = $data ?: $this->app->request->post();

@@ -1,5 +1,20 @@
 <?php
 
+// +----------------------------------------------------------------------
+// | Library for ThinkAdmin
+// +----------------------------------------------------------------------
+// | 版权所有 2014~2020 广州楚才信息科技有限公司 [ http://www.cuci.cc ]
+// +----------------------------------------------------------------------
+// | 官方网站: https://gitee.com/zoujingli/ThinkLibrary
+// +----------------------------------------------------------------------
+// | 开源协议 ( https://mit-license.org )
+// +----------------------------------------------------------------------
+// | gitee 仓库地址 ：https://gitee.com/zoujingli/ThinkLibrary
+// | github 仓库地址 ：https://github.com/zoujingli/ThinkLibrary
+// +----------------------------------------------------------------------
+
+declare (strict_types=1);
+
 namespace think\admin;
 
 use think\admin\service\ProcessService;
@@ -37,7 +52,7 @@ abstract class Command extends ThinkCommand
      * @throws \think\db\exception\DbException
      * @throws \think\db\exception\ModelNotFoundException
      */
-    protected function initialize(Input $input, Output $output)
+    protected function initialize(Input $input, Output $output): Command
     {
         $this->queue = QueueService::instance();
         $this->process = ProcessService::instance();
@@ -58,7 +73,7 @@ abstract class Command extends ThinkCommand
      * @param null|integer $progress 进度数值
      * @return static
      */
-    protected function setQueueProgress($message = null, $progress = null)
+    protected function setQueueProgress(?string $message = null, $progress = null)
     {
         if (defined('WorkQueueCode')) {
             $this->queue->progress(2, $message, $progress);
@@ -74,10 +89,10 @@ abstract class Command extends ThinkCommand
      * @return static
      * @throws Exception
      */
-    protected function setQueueError(string $message)
+    protected function setQueueError(string $message): Command
     {
         if (defined('WorkQueueCode')) {
-            throw new Exception($message, 4, WorkQueueCode);
+            $this->queue->error($message);
         } elseif (is_string($message)) {
             $this->output->writeln($message);
         }
@@ -90,10 +105,10 @@ abstract class Command extends ThinkCommand
      * @return static
      * @throws Exception
      */
-    protected function setQueueSuccess(string $message)
+    protected function setQueueSuccess(string $message): Command
     {
         if (defined('WorkQueueCode')) {
-            throw new Exception($message, 3, WorkQueueCode);
+            $this->queue->success($message);
         } elseif (is_string($message)) {
             $this->output->writeln($message);
         }

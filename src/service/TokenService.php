@@ -1,5 +1,20 @@
 <?php
 
+// +----------------------------------------------------------------------
+// | ThinkAdmin
+// +----------------------------------------------------------------------
+// | 版权所有 2014~2020 广州楚才信息科技有限公司 [ http://www.cuci.cc ]
+// +----------------------------------------------------------------------
+// | 官方网站: https://gitee.com/zoujingli/ThinkLibrary
+// +----------------------------------------------------------------------
+// | 开源协议 ( https://mit-license.org )
+// +----------------------------------------------------------------------
+// | gitee 代码仓库：https://gitee.com/zoujingli/ThinkLibrary
+// | github 代码仓库：https://github.com/zoujingli/ThinkLibrary
+// +----------------------------------------------------------------------
+
+declare (strict_types=1);
+
 namespace think\admin\service;
 
 use think\admin\Service;
@@ -71,8 +86,8 @@ class TokenService extends Service
 
     /**
      * 验证 CSRF 是否有效
-     * @param string $token 表单令牌
-     * @param string $node 授权节点
+     * @param null|string $token 表单令牌
+     * @param null|string $node 授权节点
      * @return boolean
      */
     public function checkFormToken($token = null, $node = null): bool
@@ -86,7 +101,7 @@ class TokenService extends Service
 
     /**
      * 清理表单 CSRF 数据
-     * @param string $token
+     * @param null|string $token
      * @return $this
      */
     public function clearFormToken($token = null)
@@ -97,7 +112,7 @@ class TokenService extends Service
 
     /**
      * 生成表单 CSRF 数据
-     * @param string $node
+     * @param null|string $node
      * @return array
      */
     public function buildFormToken($node = null): array
@@ -119,12 +134,12 @@ class TokenService extends Service
     /**
      * 设置缓存数据
      * @param string $token
-     * @param array $item
+     * @param array $value
      * @return static
      */
-    private function _setCacheItem(string $token, array $item)
+    private function _setCacheItem(string $token, array $value)
     {
-        $this->cachedata[$token] = $item;
+        $this->cachedata[$token] = $value;
         return $this;
     }
 
@@ -173,10 +188,9 @@ class TokenService extends Service
                 unset($this->cachedata[$key]);
             }
         }
-        /*
         if (count($this->cachedata) > 99) {
             $this->cachedata = array_slice($this->cachedata, -99);
-        }*/
+        }
         return $this->cachedata;
     }
 }

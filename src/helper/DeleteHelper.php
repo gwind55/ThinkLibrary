@@ -1,5 +1,20 @@
 <?php
 
+// +----------------------------------------------------------------------
+// | Library for ThinkAdmin
+// +----------------------------------------------------------------------
+// | 版权所有 2014~2020 广州楚才信息科技有限公司 [ http://www.cuci.cc ]
+// +----------------------------------------------------------------------
+// | 官方网站: https://gitee.com/zoujingli/ThinkLibrary
+// +----------------------------------------------------------------------
+// | 开源协议 ( https://mit-license.org )
+// +----------------------------------------------------------------------
+// | gitee 仓库地址 ：https://gitee.com/zoujingli/ThinkLibrary
+// | github 仓库地址 ：https://github.com/zoujingli/ThinkLibrary
+// +----------------------------------------------------------------------
+
+declare (strict_types=1);
+
 namespace think\admin\helper;
 
 use think\admin\Helper;
@@ -46,7 +61,7 @@ class DeleteHelper extends Helper
             if (in_array('is_deleted', $fields)) $data['is_deleted'] = 1;
         }
         // 执行删除操作
-        $result = empty($data) ? $query->delete() : $query->update($data);
+        $result = (empty($data) ? $query->delete() : $query->update($data)) !== false;
         // 结果回调处理
         if (false === $this->class->callback('_delete_result', $result)) {
             return $result;

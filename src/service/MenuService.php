@@ -1,5 +1,20 @@
 <?php
 
+// +----------------------------------------------------------------------
+// | ThinkAdmin
+// +----------------------------------------------------------------------
+// | 版权所有 2014~2020 广州楚才信息科技有限公司 [ http://www.cuci.cc ]
+// +----------------------------------------------------------------------
+// | 官方网站: https://gitee.com/zoujingli/ThinkLibrary
+// +----------------------------------------------------------------------
+// | 开源协议 ( https://mit-license.org )
+// +----------------------------------------------------------------------
+// | gitee 代码仓库：https://gitee.com/zoujingli/ThinkLibrary
+// | github 代码仓库：https://github.com/zoujingli/ThinkLibrary
+// +----------------------------------------------------------------------
+
+declare (strict_types=1);
+
 namespace think\admin\service;
 
 use think\admin\extend\DataExtend;
@@ -70,7 +85,7 @@ class MenuService extends Service
                 unset($menus[$key]);
             } else {
                 $node = join('/', array_slice(explode('/', $menu['url']), 0, 3));
-                $menu['url'] = url($menu['url']) . (empty($menu['params']) ? '' : "?{$menu['params']}");
+                $menu['url'] = url($menu['url'])->build() . (!empty($menu['params']) ? '?' . $menu['params'] : '');
                 if (!$service->check($node)) unset($menus[$key]);
             }
         }

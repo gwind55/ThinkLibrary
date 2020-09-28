@@ -12,6 +12,8 @@
 // 以下代码来自 topthink/think-multi-app，有部分修改以兼容 ThinkAdmin 的需求
 // +----------------------------------------------------------------------
 
+declare (strict_types=1);
+
 namespace think\admin\multiple;
 
 use Closure;
@@ -61,7 +63,7 @@ class App
      * @param Closure $next
      * @return Response
      */
-    public function handle($request, Closure $next)
+    public function handle(Request $request, Closure $next)
     {
         if (!$this->parseMultiApp()) {
             return $next($request);

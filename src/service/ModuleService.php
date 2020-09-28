@@ -325,8 +325,6 @@ class ModuleService extends Service
      */
     private function _getModuleInfoPath(string $name): string
     {
-        //$appdir = $this->app->getBasePath() . $name;
-        //return $appdir . DIRECTORY_SEPARATOR . 'module' . DIRECTORY_SEPARATOR;
         return $this->app->getBasePath() . $name . DIRECTORY_SEPARATOR;
     }
 

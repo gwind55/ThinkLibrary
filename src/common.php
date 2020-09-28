@@ -1,5 +1,18 @@
 <?php
 
+// +----------------------------------------------------------------------
+// | Library for ThinkAdmin
+// +----------------------------------------------------------------------
+// | 版权所有 2014~2020 广州楚才信息科技有限公司 [ http://www.cuci.cc ]
+// +----------------------------------------------------------------------
+// | 官方网站: https://gitee.com/zoujingli/ThinkLibrary
+// +----------------------------------------------------------------------
+// | 开源协议 ( https://mit-license.org )
+// +----------------------------------------------------------------------
+// | gitee 仓库地址 ：https://gitee.com/zoujingli/ThinkLibrary
+// | github 仓库地址 ：https://github.com/zoujingli/ThinkLibrary
+// +----------------------------------------------------------------------
+
 use think\admin\extend\HttpExtend;
 use think\admin\service\AdminService;
 use think\admin\service\QueueService;
@@ -13,7 +26,7 @@ if (!function_exists('p')) {
      * 打印输出数据到文件
      * @param mixed $data 输出的数据
      * @param boolean $new 强制替换文件
-     * @param string $file 保存文件名称
+     * @param null|string $file 保存文件名称
      */
     function p($data, $new = false, $file = null)
     {
@@ -23,11 +36,11 @@ if (!function_exists('p')) {
 if (!function_exists('auth')) {
     /**
      * 访问权限检查
-     * @param string $node
+     * @param null|string $node
      * @return boolean
      * @throws ReflectionException
      */
-    function auth($node): bool
+    function auth(?string $node): bool
     {
         return AdminService::instance()->check($node);
     }
@@ -41,7 +54,7 @@ if (!function_exists('sysuri')) {
      * @param boolean|string $domain 域名
      * @return string
      */
-    function sysuri($url = '', array $vars = [], $suffix = true, $domain = false)
+    function sysuri(string $url = '', array $vars = [], $suffix = true, $domain = false)
     {
         return SystemService::instance()->sysuri($url, $vars, $suffix, $domain);
     }
@@ -50,7 +63,7 @@ if (!function_exists('sysconf')) {
     /**
      * 获取或配置系统参数
      * @param string $name 参数名称
-     * @param string $value 参数内容
+     * @param mixed $value 参数内容
      * @return mixed
      * @throws \think\db\exception\DataNotFoundException
      * @throws \think\db\exception\DbException
@@ -75,7 +88,7 @@ if (!function_exists('sysdata')) {
      * @throws \think\db\exception\DbException
      * @throws \think\db\exception\ModelNotFoundException
      */
-    function sysdata($name, $value = null)
+    function sysdata(string $name, $value = null)
     {
         if (is_null($value)) {
             return SystemService::instance()->getData($name);
@@ -99,7 +112,7 @@ if (!function_exists('sysqueue')) {
      * @throws \think\db\exception\DbException
      * @throws \think\db\exception\ModelNotFoundException
      */
-    function sysqueue($title, $command, $later = 0, $data = [], $rscript = 1, $loops = 0)
+    function sysqueue(string $title, string $command, int $later = 0, array $data = [], int $rscript = 1, int $loops = 0): string
     {
         return QueueService::instance()->register($title, $command, $later, $data, $rscript, $loops)->code;
     }
@@ -107,10 +120,10 @@ if (!function_exists('sysqueue')) {
 if (!function_exists('systoken')) {
     /**
      * 生成 CSRF-TOKEN 参数
-     * @param string $node
+     * @param null|string $node
      * @return string
      */
-    function systoken($node = null)
+    function systoken(?string $node = null): string
     {
         $result = TokenService::instance()->buildFormToken($node);
         return $result['token'] ?? '';
@@ -123,18 +136,19 @@ if (!function_exists('sysoplog')) {
      * @param string $content 日志内容
      * @return boolean
      */
-    function sysoplog($action, $content)
+    function sysoplog(string $action, string $content)
     {
         return SystemService::instance()->setOplog($action, $content);
     }
 }
+
 if (!function_exists('encode')) {
     /**
      * 加密 UTF8 字符串
      * @param string $content
      * @return string
      */
-    function encode($content)
+    function encode(string $content): string
     {
         [$chars, $length] = ['', strlen($string = iconv('UTF-8', 'GBK//TRANSLIT', $content))];
         for ($i = 0; $i < $length; $i++) $chars .= str_pad(base_convert(ord($string[$i]), 10, 36), 2, 0, 0);
@@ -147,7 +161,7 @@ if (!function_exists('decode')) {
      * @param string $content
      * @return string
      */
-    function decode($content)
+    function decode(string $content): string
     {
         $chars = '';
         foreach (str_split($content, 2) as $char) {
@@ -164,7 +178,7 @@ if (!function_exists('http_get')) {
      * @param array $options CURL参数
      * @return boolean|string
      */
-    function http_get($url, $query = [], $options = [])
+    function http_get(string $url, $query = [], array $options = [])
     {
         return HttpExtend::get($url, $query, $options);
     }
@@ -177,7 +191,7 @@ if (!function_exists('http_post')) {
      * @param array $options CURL参数
      * @return boolean|string
      */
-    function http_post($url, $data, $options = [])
+    function http_post(string $url, $data, array $options = [])
     {
         return HttpExtend::post($url, $data, $options);
     }
@@ -194,7 +208,7 @@ if (!function_exists('data_save')) {
      * @throws \think\db\exception\DbException
      * @throws \think\db\exception\ModelNotFoundException
      */
-    function data_save($dbQuery, $data, $key = 'id', $where = [])
+    function data_save($dbQuery, array $data, string $key = 'id', array $where = [])
     {
         return SystemService::instance()->save($dbQuery, $data, $key, $where);
     }
@@ -202,10 +216,10 @@ if (!function_exists('data_save')) {
 if (!function_exists('format_bytes')) {
     /**
      * 文件字节单位转换
-     * @param integer $size
+     * @param string|integer $size
      * @return string
      */
-    function format_bytes($size)
+    function format_bytes($size): string
     {
         if (is_numeric($size)) {
             $units = ['B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
@@ -219,7 +233,7 @@ if (!function_exists('format_bytes')) {
 if (!function_exists('format_datetime')) {
     /**
      * 日期格式标准输出
-     * @param string $datetime 输入日期
+     * @param int|string $datetime 输入日期
      * @param string $format 输出格式
      * @return false|string
      */
@@ -239,7 +253,7 @@ if (!function_exists('enbase64url')) {
      * @param string $string
      * @return string
      */
-    function enbase64url(string $string)
+    function enbase64url(string $string): string
     {
         return rtrim(strtr(base64_encode($string), '+/', '-_'), '=');
     }
@@ -250,7 +264,7 @@ if (!function_exists('debase64url')) {
      * @param string $string
      * @return string
      */
-    function debase64url(string $string)
+    function debase64url(string $string): string
     {
         return base64_decode(str_pad(strtr($string, '-_', '+/'), strlen($string) % 4, '=', STR_PAD_RIGHT));
     }
@@ -263,7 +277,7 @@ if (!function_exists('down_file')) {
      * @param integer $expire 强制本地存储时间
      * @return string
      */
-    function down_file($source, $force = false, $expire = 0)
+    function down_file(string $source, bool $force = false, int $expire = 0)
     {
         $result = Storage::down($source, $force, $expire);
         return $result['url'] ?? $source;

@@ -1,5 +1,20 @@
 <?php
 
+// +----------------------------------------------------------------------
+// | ThinkAdmin
+// +----------------------------------------------------------------------
+// | 版权所有 2014~2020 广州楚才信息科技有限公司 [ http://www.cuci.cc ]
+// +----------------------------------------------------------------------
+// | 官方网站: https://gitee.com/zoujingli/ThinkLibrary
+// +----------------------------------------------------------------------
+// | 开源协议 ( https://mit-license.org )
+// +----------------------------------------------------------------------
+// | gitee 代码仓库：https://gitee.com/zoujingli/ThinkLibrary
+// | github 代码仓库：https://github.com/zoujingli/ThinkLibrary
+// +----------------------------------------------------------------------
+
+declare (strict_types=1);
+
 namespace think\admin\service;
 
 use think\admin\extend\DataExtend;
@@ -52,11 +67,11 @@ class AdminService extends Service
     /**
      * 检查指定节点授权
      * --- 需要读取缓存或扫描所有节点
-     * @param string $node
+     * @param null|string $node
      * @return boolean
      * @throws \ReflectionException
      */
-    public function check(string $node = ''): bool
+    public function check(?string $node = ''): bool
     {
         if ($this->isSuper()) return true;
         $service = NodeService::instance();
@@ -110,7 +125,7 @@ class AdminService extends Service
      * @throws \think\db\exception\DbException
      * @throws \think\db\exception\ModelNotFoundException
      */
-    public function apply($force = false)
+    public function apply(bool $force = false)
     {
         if ($force) $this->clearCache();
         if (($uid = $this->app->session->get('user.id'))) {

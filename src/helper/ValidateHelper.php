@@ -1,5 +1,20 @@
 <?php
 
+// +----------------------------------------------------------------------
+// | Library for ThinkAdmin
+// +----------------------------------------------------------------------
+// | 版权所有 2014~2020 广州楚才信息科技有限公司 [ http://www.cuci.cc ]
+// +----------------------------------------------------------------------
+// | 官方网站: https://gitee.com/zoujingli/ThinkLibrary
+// +----------------------------------------------------------------------
+// | 开源协议 ( https://mit-license.org )
+// +----------------------------------------------------------------------
+// | gitee 仓库地址 ：https://gitee.com/zoujingli/ThinkLibrary
+// | github 仓库地址 ：https://github.com/zoujingli/ThinkLibrary
+// +----------------------------------------------------------------------
+
+declare (strict_types=1);
+
 namespace think\admin\helper;
 
 use think\admin\Helper;
@@ -16,7 +31,7 @@ class ValidateHelper extends Helper
      * 快捷输入并验证（ 支持 规则 # 别名 ）
      * @param array $rules 验证规则（ 验证信息数组 ）
      * @param string|array $input 输入内容 ( post. 或 get. )
-     * @param boolean $callable 异常处理操作
+     * @param callable|null $callable 异常处理操作
      * @return array|void
      *  age.require => message // 最大值限定
      *  age.between:1,120 => message // 范围限定
@@ -25,7 +40,7 @@ class ValidateHelper extends Helper
      *  region.value => value // 固定字段数值内容
      *  更多规则参照 ThinkPHP 官方的验证类
      */
-    public function init(array $rules, $input = '', $callable = null): array
+    public function init(array $rules, $input = '', ?callable $callable = null): array
     {
         if (is_string($input)) {
             $type = trim($input, '.') ?: 'request';
@@ -54,7 +69,7 @@ class ValidateHelper extends Helper
         } elseif (is_callable($callable)) {
             return call_user_func($callable, $validate->getError());
         } else {
-            return $this->class->error($validate->getError());
+            $this->class->error($validate->getError());
         }
     }
 }

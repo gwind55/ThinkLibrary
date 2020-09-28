@@ -12,6 +12,8 @@
 // 以下代码来自 topthink/think-multi-app，有部分修改以兼容 ThinkAdmin 的需求
 // +----------------------------------------------------------------------
 
+declare (strict_types=1);
+
 namespace think\admin\multiple;
 
 use think\helper\Str;
@@ -71,12 +73,11 @@ class Url extends \think\route\Url
 
     public function build()
     {
-        // 解析URL
         $url = $this->url;
-        $suffix = $this->suffix;
-        $domain = $this->domain;
-        $request = $this->app->request;
         $vars = $this->vars;
+        $domain = $this->domain;
+        $suffix = $this->suffix;
+        $request = $this->app->request;
         if (0 === strpos($url, '[') && $pos = strpos($url, ']')) {
             // [name] 表示使用路由命名标识生成URL
             $name = substr($url, 1, $pos - 1);

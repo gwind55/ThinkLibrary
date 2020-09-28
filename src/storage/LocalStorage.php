@@ -1,5 +1,20 @@
 <?php
 
+// +----------------------------------------------------------------------
+// | Library for ThinkAdmin
+// +----------------------------------------------------------------------
+// | 版权所有 2014~2020 广州楚才信息科技有限公司 [ http://www.cuci.cc ]
+// +----------------------------------------------------------------------
+// | 官方网站: https://gitee.com/zoujingli/ThinkLibrary
+// +----------------------------------------------------------------------
+// | 开源协议 ( https://mit-license.org )
+// +----------------------------------------------------------------------
+// | gitee 仓库地址 ：https://gitee.com/zoujingli/ThinkLibrary
+// | github 仓库地址 ：https://github.com/zoujingli/ThinkLibrary
+// +----------------------------------------------------------------------
+
+declare (strict_types=1);
+
 namespace think\admin\storage;
 
 use think\admin\Storage;
@@ -40,7 +55,7 @@ class LocalStorage extends Storage
      * @throws \think\db\exception\DbException
      * @throws \think\db\exception\ModelNotFoundException
      */
-    public static function instance($name = null)
+    public static function instance($name = null): LocalStorage
     {
         return parent::instance('local');
     }
@@ -50,10 +65,10 @@ class LocalStorage extends Storage
      * @param string $name 文件名称
      * @param string $file 文件内容
      * @param boolean $safe 安全模式
-     * @param string $attname 下载名称
+     * @param null|string $attname 下载名称
      * @return array
      */
-    public function set($name, $file, $safe = false, $attname = null)
+    public function set(string $name, string $file, bool $safe = false, ?string $attname = null)
     {
         try {
             $path = $this->path($name, $safe);
@@ -61,7 +76,7 @@ class LocalStorage extends Storage
             if (file_put_contents($path, $file)) {
                 return $this->info($name, $safe, $attname);
             }
-        } catch (\Exception $e) {
+        } catch (\Exception $exception) {
             return [];
         }
     }
@@ -72,7 +87,7 @@ class LocalStorage extends Storage
      * @param boolean $safe 安全模式
      * @return string
      */
-    public function get($name, $safe = false)
+    public function get(string $name, bool $safe = false)
     {
         if (!$this->has($name, $safe)) return '';
         return static::curlGet($this->path($name, $safe));
@@ -84,7 +99,7 @@ class LocalStorage extends Storage
      * @param boolean $safe 安全模式
      * @return boolean
      */
-    public function del($name, $safe = false)
+    public function del(string $name, bool $safe = false)
     {
         if ($this->has($name, $safe)) {
             return @unlink($this->path($name, $safe));
@@ -99,7 +114,7 @@ class LocalStorage extends Storage
      * @param boolean $safe 安全模式
      * @return boolean
      */
-    public function has($name, $safe = false)
+    public function has(string $name, bool $safe = false): bool
     {
         return file_exists($this->path($name, $safe));
     }
@@ -108,10 +123,10 @@ class LocalStorage extends Storage
      * 获取文件当前URL地址
      * @param string $name 文件名称
      * @param boolean $safe 安全模式
-     * @param string $attname 下载名称
-     * @return string|null
+     * @param null|string $attname 下载名称
+     * @return string
      */
-    public function url($name, $safe = false, $attname = null)
+    public function url(string $name, bool $safe = false, ?string $attname = null): string
     {
         return $safe ? $name : "{$this->prefix}/upload/{$this->delSuffix($name)}{$this->getSuffix($attname)}";
     }
@@ -122,7 +137,7 @@ class LocalStorage extends Storage
      * @param boolean $safe 安全模式
      * @return string
      */
-    public function path($name, $safe = false)
+    public function path(string $name, bool $safe = false): string
     {
         $root = $this->app->getRootPath();
         $path = $safe ? 'safefile' : 'public/upload';
@@ -133,10 +148,10 @@ class LocalStorage extends Storage
      * 获取文件存储信息
      * @param string $name 文件名称
      * @param boolean $safe 安全模式
-     * @param string $attname 下载名称
+     * @param null|string $attname 下载名称
      * @return array
      */
-    public function info($name, $safe = false, $attname = null)
+    public function info(string $name, bool $safe = false, ?string $attname = null): array
     {
         return $this->has($name, $safe) ? [
             'url' => $this->url($name, $safe, $attname),
@@ -148,7 +163,7 @@ class LocalStorage extends Storage
      * 获取文件上传地址
      * @return string
      */
-    public function upload()
+    public function upload(): string
     {
         return url('admin/api.upload/file')->build();
     }

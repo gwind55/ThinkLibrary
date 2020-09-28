@@ -1,5 +1,20 @@
 <?php
 
+// +----------------------------------------------------------------------
+// | Library for ThinkAdmin
+// +----------------------------------------------------------------------
+// | 版权所有 2014~2020 广州楚才信息科技有限公司 [ http://www.cuci.cc ]
+// +----------------------------------------------------------------------
+// | 官方网站: https://gitee.com/zoujingli/ThinkLibrary
+// +----------------------------------------------------------------------
+// | 开源协议 ( https://mit-license.org )
+// +----------------------------------------------------------------------
+// | gitee 仓库地址 ：https://gitee.com/zoujingli/ThinkLibrary
+// | github 仓库地址 ：https://github.com/zoujingli/ThinkLibrary
+// +----------------------------------------------------------------------
+
+declare (strict_types=1);
+
 namespace think\admin\helper;
 
 use think\admin\Helper;
@@ -18,7 +33,7 @@ class PageHelper extends Helper
      * @param string|Query $dbQuery
      * @param boolean $page 是否启用分页
      * @param boolean $display 是否渲染模板
-     * @param boolean $total 集合分页记录数
+     * @param boolean|integer $total 集合分页记录数
      * @param integer $limit 集合每页记录数
      * @param string $template 模板文件名称
      * @return array|mixed
@@ -26,7 +41,7 @@ class PageHelper extends Helper
      * @throws \think\db\exception\DbException
      * @throws \think\db\exception\ModelNotFoundException
      */
-    public function init($dbQuery, $page = true, $display = true, $total = false, $limit = 0, $template = '')
+    public function init($dbQuery, bool $page = true, bool $display = true, $total = false, int $limit = 0, string $template = '')
     {
         $this->query = $this->buildQuery($dbQuery);
         // 数据列表排序自动处理
@@ -39,7 +54,7 @@ class PageHelper extends Helper
                 $limit = intval($limit);
             } else {
                 $limit = $this->app->request->get('limit', $this->app->cookie->get('limit'));
-                $this->app->cookie->set('limit', $limit = intval($limit >= 10 ? $limit : 20));
+                $this->app->cookie->set('limit', ($limit = intval($limit >= 10 ? $limit : 20)) . '');
             }
             [$options, $query] = ['', $this->app->request->get()];
             $pager = $this->query->paginate(['list_rows' => $limit, 'query' => $query], $total);
@@ -65,7 +80,7 @@ class PageHelper extends Helper
             $result = ['list' => $this->query->select()->toArray()];
         }
         if (false !== $this->class->callback('_page_filter', $result['list']) && $display) {
-            return $this->class->fetch($template, $result);
+            $this->class->fetch($template, $result);
         } else {
             return $result;
         }

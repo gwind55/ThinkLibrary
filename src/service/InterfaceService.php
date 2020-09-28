@@ -1,5 +1,20 @@
 <?php
 
+// +----------------------------------------------------------------------
+// | ThinkAdmin
+// +----------------------------------------------------------------------
+// | 版权所有 2014~2020 广州楚才信息科技有限公司 [ http://www.cuci.cc ]
+// +----------------------------------------------------------------------
+// | 官方网站: https://gitee.com/zoujingli/ThinkLibrary
+// +----------------------------------------------------------------------
+// | 开源协议 ( https://mit-license.org )
+// +----------------------------------------------------------------------
+// | gitee 代码仓库：https://gitee.com/zoujingli/ThinkLibrary
+// | github 代码仓库：https://github.com/zoujingli/ThinkLibrary
+// +----------------------------------------------------------------------
+
+declare (strict_types=1);
+
 namespace think\admin\service;
 
 use think\admin\extend\HttpExtend;
@@ -66,7 +81,7 @@ class InterfaceService extends Service
      * @param boolean $debug
      * @return $this
      */
-    public function debug($debug)
+    public function debug(bool $debug): InterfaceService
     {
         $this->debug = boolval($debug);
         return $this;
@@ -76,7 +91,7 @@ class InterfaceService extends Service
      * 获取接口账号
      * @return string
      */
-    public function getAppid()
+    public function getAppid(): string
     {
         return $this->appid;
     }
@@ -85,7 +100,7 @@ class InterfaceService extends Service
      * 获取接口地址
      * @return string
      */
-    public function getBaseUrl()
+    public function getBaseUrl(): string
     {
         return $this->baseurl;
     }
@@ -96,10 +111,21 @@ class InterfaceService extends Service
      * @param string $appkey 接口密钥
      * @return $this
      */
-    public function setAuth($appid, $appkey)
+    public function setAuth(string $appid, string $appkey): InterfaceService
     {
         $this->appid = $appid;
         $this->appkey = $appkey;
+        return $this;
+    }
+
+    /**
+     * 设置接口网关地址
+     * @param string $getway 网关地址
+     * @return $this
+     */
+    public function getway(string $getway): InterfaceService
+    {
+        $this->baseurl = $getway;
         return $this;
     }
 
@@ -108,7 +134,7 @@ class InterfaceService extends Service
      * @param boolean $check 验证数据
      * @return mixed
      */
-    public function getInput($check = true)
+    public function getInput(bool $check = true)
     {
         // 基础参数获取
         $this->input = ValidateHelper::instance()->init([
@@ -141,7 +167,7 @@ class InterfaceService extends Service
      * 显示检查结果
      * @return $this
      */
-    public function showCheck()
+    public function showCheck(): InterfaceService
     {
         if ($this->debug) return $this;
         if (is_null($check = $this->checkInput())) {
@@ -156,7 +182,7 @@ class InterfaceService extends Service
      * 获取请求参数
      * @return array
      */
-    public function getData()
+    public function getData(): array
     {
         if ($this->debug) {
             return $this->app->request->request();
@@ -172,7 +198,7 @@ class InterfaceService extends Service
      * @param mixed $data 返回数据
      * @param mixed $code 返回状态码
      */
-    public function error($info, $data = '{-null-}', $code = 0)
+    public function error($info, $data = '{-null-}', $code = 0): void
     {
         if ($data === '{-null-}') $data = new \stdClass();
         $this->baseResponse(lang('think_library_response_success'), ['code' => $code, 'info' => $info, 'data' => $data], 1);
@@ -184,7 +210,7 @@ class InterfaceService extends Service
      * @param mixed $data 返回数据
      * @param mixed $code 返回状态码
      */
-    public function success($info, $data = '{-null-}', $code = 1)
+    public function success($info, $data = '{-null-}', $code = 1): void
     {
         if ($data === '{-null-}') $data = new \stdClass();
         $this->baseResponse(lang('think_library_response_success'), ['code' => $code, 'info' => $info, 'data' => $data], 1);
@@ -196,7 +222,7 @@ class InterfaceService extends Service
      * @param mixed $data 返回数据
      * @param mixed $code 根状态码
      */
-    public function baseError($info, $data = [], $code = 0)
+    public function baseError($info, $data = [], $code = 0): void
     {
         $this->baseResponse($info, $data, $code);
     }
@@ -207,7 +233,7 @@ class InterfaceService extends Service
      * @param mixed $data 返回数据
      * @param mixed $code 根状态码
      */
-    public function baseSuccess($info, $data = [], $code = 1)
+    public function baseSuccess($info, $data = [], $code = 1): void
     {
         $this->baseResponse($info, $data, $code);
     }
@@ -218,7 +244,7 @@ class InterfaceService extends Service
      * @param mixed $data 返回数据
      * @param mixed $code 根状态码
      */
-    public function baseResponse($info, $data = [], $code = 1)
+    public function baseResponse($info, $data = [], $code = 1): void
     {
         $array = $this->_buildSign($data);
         throw new HttpResponseException(json([

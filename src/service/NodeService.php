@@ -1,5 +1,20 @@
 <?php
 
+// +----------------------------------------------------------------------
+// | ThinkAdmin
+// +----------------------------------------------------------------------
+// | 版权所有 2014~2020 广州楚才信息科技有限公司 [ http://www.cuci.cc ]
+// +----------------------------------------------------------------------
+// | 官方网站: https://gitee.com/zoujingli/ThinkLibrary
+// +----------------------------------------------------------------------
+// | 开源协议 ( https://mit-license.org )
+// +----------------------------------------------------------------------
+// | gitee 代码仓库：https://gitee.com/zoujingli/ThinkLibrary
+// | github 代码仓库：https://github.com/zoujingli/ThinkLibrary
+// +----------------------------------------------------------------------
+
+declare (strict_types=1);
+
 namespace think\admin\service;
 
 use think\admin\Service;
@@ -35,15 +50,15 @@ class NodeService extends Service
         $prefix = $this->app->getNamespace();
         $middle = '\\' . $this->nameTolower($this->app->request->controller());
         $suffix = ($type === 'controller') ? '' : ('\\' . $this->app->request->action());
-        return strtr(substr($prefix, stripos($prefix, '\\') + 1) . $middle . $suffix, '\\', '/');
+        return strtolower(strtr(substr($prefix, stripos($prefix, '\\') + 1) . $middle . $suffix, '\\', '/'));
     }
 
     /**
      * 检查并完整节点内容
-     * @param string $node
+     * @param null|string $node
      * @return string
      */
-    public function fullnode($node): string
+    public function fullnode(?string $node = ''): string
     {
         if (empty($node)) return $this->getCurrent();
         if (count($attrs = explode('/', $node)) === 1) {
@@ -84,20 +99,21 @@ class NodeService extends Service
         } else {
             $data = [];
         }
+        /*! 排除内置方法，禁止访问内置方法 */
         $ignores = get_class_methods('\think\admin\Controller');
+        /*! 扫描所有代码控制器节点，更新节点缓存 */
         foreach ($this->scanDirectory($this->app->getBasePath()) as $file) {
             if (preg_match("|/(\w+)/(\w+)/controller/(.+)\.php$|i", $file, $matches)) {
                 [, $namespace, $appname, $classname] = $matches;
-                $prefix = strtr("{$appname}/{$this->nameTolower($classname)}", '\\', '/');
-                $reflection = new \ReflectionClass(strtr("{$namespace}/{$appname}/controller/{$classname}", '/', '\\'));
-                $data[$prefix] = $this->_parseComment($reflection->getDocComment(), $classname);
-                foreach ($reflection->getMethods(\ReflectionMethod::IS_PUBLIC) as $method) {
+                $class = new \ReflectionClass(strtr("{$namespace}/{$appname}/controller/{$classname}", '/', '\\'));
+                $prefix = strtolower(strtr("{$appname}/{$this->nameTolower($classname)}", '\\', '/'));
+                $data[$prefix] = $this->_parseComment($class->getDocComment() ?: '', $classname);
+                foreach ($class->getMethods(\ReflectionMethod::IS_PUBLIC) as $method) {
                     if (in_array($metname = $method->getName(), $ignores)) continue;
-                    $data["{$prefix}/{$metname}"] = $this->_parseComment($method->getDocComment(), $metname);
+                    $data[strtolower("{$prefix}/{$metname}")] = $this->_parseComment($method->getDocComment() ?: '', $metname);
                 }
             }
         }
-        $data = array_change_key_case($data, CASE_LOWER);
         $this->app->cache->set('SystemAuthNode', $data);
         return $data;
     }

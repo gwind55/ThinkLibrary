@@ -1,5 +1,20 @@
 <?php
 
+// +----------------------------------------------------------------------
+// | ThinkAdmin
+// +----------------------------------------------------------------------
+// | 版权所有 2014~2020 广州楚才信息科技有限公司 [ http://www.cuci.cc ]
+// +----------------------------------------------------------------------
+// | 官方网站: https://gitee.com/zoujingli/ThinkLibrary
+// +----------------------------------------------------------------------
+// | 开源协议 ( https://mit-license.org )
+// +----------------------------------------------------------------------
+// | gitee 代码仓库：https://gitee.com/zoujingli/ThinkLibrary
+// | github 代码仓库：https://github.com/zoujingli/ThinkLibrary
+// +----------------------------------------------------------------------
+
+declare (strict_types=1);
+
 namespace think\admin\service;
 
 use think\admin\Service;
@@ -37,7 +52,7 @@ class ProcessService extends Service
      * @param string $command 任务指令
      * @return $this
      */
-    public function create($command)
+    public function create(string $command): ProcessService
     {
         if ($this->iswin()) {
             $this->exec(__DIR__ . "/bin/console.exe {$command}");
@@ -77,7 +92,7 @@ class ProcessService extends Service
      * @param integer $pid 进程号
      * @return boolean
      */
-    public function close($pid): bool
+    public function close(int $pid): bool
     {
         if ($this->iswin()) {
             $this->exec("wmic process {$pid} call terminate");
@@ -93,7 +108,7 @@ class ProcessService extends Service
      * @param boolean $outarr 返回类型
      * @return string|array
      */
-    public function exec($command, $outarr = false)
+    public function exec(string $command, $outarr = false)
     {
         exec($command, $output);
         return $outarr ? $output : join("\n", $output);

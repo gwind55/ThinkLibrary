@@ -1,5 +1,20 @@
 <?php
 
+// +----------------------------------------------------------------------
+// | Library for ThinkAdmin
+// +----------------------------------------------------------------------
+// | 版权所有 2014~2020 广州楚才信息科技有限公司 [ http://www.cuci.cc ]
+// +----------------------------------------------------------------------
+// | 官方网站: https://gitee.com/zoujingli/ThinkLibrary
+// +----------------------------------------------------------------------
+// | 开源协议 ( https://mit-license.org )
+// +----------------------------------------------------------------------
+// | gitee 仓库地址 ：https://gitee.com/zoujingli/ThinkLibrary
+// | github 仓库地址 ：https://github.com/zoujingli/ThinkLibrary
+// +----------------------------------------------------------------------
+
+declare (strict_types=1);
+
 namespace think\admin\storage;
 
 use think\admin\extend\HttpExtend;
@@ -78,10 +93,10 @@ class AliossStorage extends Storage
      * @param string $name 文件名称
      * @param string $file 文件内容
      * @param boolean $safe 安全模式
-     * @param string $attname 下载名称
+     * @param null|string $attname 下载名称
      * @return array
      */
-    public function set($name, $file, $safe = false, $attname = null)
+    public function set(string $name, string $file, bool $safe = false, ?string $attname = null)
     {
         $token = $this->buildUploadToken($name);
         $data = ['key' => $name];
@@ -107,7 +122,7 @@ class AliossStorage extends Storage
      * @param boolean $safe 安全模式
      * @return false|string
      */
-    public function get($name, $safe = false)
+    public function get(string $name, bool $safe = false)
     {
         return static::curlGet($this->url($name, $safe));
     }
@@ -118,7 +133,7 @@ class AliossStorage extends Storage
      * @param boolean $safe 安全模式
      * @return boolean
      */
-    public function del($name, $safe = false)
+    public function del(string $name, bool $safe = false)
     {
         [$file] = explode('?', $name);
         $result = HttpExtend::request('DELETE', "http://{$this->bucket}.{$this->point}/{$file}", [
@@ -133,7 +148,7 @@ class AliossStorage extends Storage
      * @param boolean $safe 安全模式
      * @return boolean
      */
-    public function has($name, $safe = false)
+    public function has(string $name, bool $safe = false)
     {
         $file = $this->delSuffix($name);
         $result = HttpExtend::request('HEAD', "http://{$this->bucket}.{$this->point}/{$file}", [
@@ -146,10 +161,10 @@ class AliossStorage extends Storage
      * 获取文件当前URL地址
      * @param string $name 文件名称
      * @param boolean $safe 安全模式
-     * @param string $attname 下载名称
+     * @param null|string $attname 下载名称
      * @return string
      */
-    public function url($name, $safe = false, $attname = null)
+    public function url(string $name, bool $safe = false, ?string $attname = null): string
     {
         return "{$this->prefix}/{$this->delSuffix($name)}{$this->getSuffix($attname)}";
     }
@@ -160,7 +175,7 @@ class AliossStorage extends Storage
      * @param boolean $safe 安全模式
      * @return string
      */
-    public function path($name, $safe = false)
+    public function path(string $name, bool $safe = false): string
     {
         return $this->url($name, $safe);
     }
@@ -169,10 +184,10 @@ class AliossStorage extends Storage
      * 获取文件存储信息
      * @param string $name 文件名称
      * @param boolean $safe 安全模式
-     * @param string $attname 下载名称
+     * @param null|string $attname 下载名称
      * @return array
      */
-    public function info($name, $safe = false, $attname = null)
+    public function info(string $name, bool $safe = false, ?string $attname = null): array
     {
         return $this->has($name, $safe) ? [
             'url' => $this->url($name, $safe, $attname),
@@ -184,7 +199,7 @@ class AliossStorage extends Storage
      * 获取文件上传地址
      * @return string
      */
-    public function upload()
+    public function upload(): string
     {
         $http = $this->app->request->isSsl() ? 'https' : 'http';
         return "{$http}://{$this->bucket}.{$this->point}";
@@ -192,12 +207,12 @@ class AliossStorage extends Storage
 
     /**
      * 获取文件上传令牌
-     * @param string $name 文件名称
+     * @param null|string $name 文件名称
      * @param integer $expires 有效时间
-     * @param string $attname 下载名称
+     * @param null|string $attname 下载名称
      * @return array
      */
-    public function buildUploadToken($name = null, $expires = 3600, $attname = null)
+    public function buildUploadToken(?string $name = null, int $expires = 3600, ?string $attname = null): array
     {
         $data = [
             'policy'  => base64_encode(json_encode([
@@ -218,7 +233,7 @@ class AliossStorage extends Storage
      * @param array $header 请求头信息
      * @return array
      */
-    private function headerSign($method, $soruce, $header = [])
+    private function headerSign(string $method, string $soruce, array $header = []): array
     {
         if (empty($header['Date'])) $header['Date'] = gmdate('D, d M Y H:i:s \G\M\T');
         if (empty($header['Content-Type'])) $header['Content-Type'] = 'application/xml';
