@@ -100,7 +100,7 @@ class ModuleService extends Service
                 'data' => $data
             ];
         }
-        $result = json_decode(HttpExtend::get($this->server . '/admin/api.update/version'), true);
+        $result = json_decode(HttpExtend::get($this->server . '/index/update/version'), true);
         if (isset($result['code'])) {
             if ($result['code'] > 0 && isset($result['data']) && is_array($result['data'])) {
                 $this->app->cache->set('moduleOnlineData', $result['data'], 30);
@@ -215,7 +215,7 @@ class ModuleService extends Service
      */
     public function grenerateDifference(array $rules = [], array $ignore = [], array $result = []): array
     {
-        $online = json_decode(HttpExtend::post($this->server . '/admin/api.update/node', [
+        $online = json_decode(HttpExtend::post($this->server . '/index/update/node', [
             'rules' => json_encode($rules), 'ignore' => json_encode($ignore),
         ]), true);
         if (empty($online['code'])) return $result;
@@ -299,7 +299,7 @@ class ModuleService extends Service
      */
     private function _downloadUpdateFile(string $encode)
     {
-        $source = $this->server . '/admin/api.update/get?encode=' . $encode;
+        $source = $this->server . '/index/update/get?encode=' . $encode;
         $result = json_decode(HttpExtend::get($source), true);
         if (empty($result['code'])) return false;
         $filename = $this->root . decode($encode);
