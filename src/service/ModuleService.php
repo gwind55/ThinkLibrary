@@ -1,11 +1,12 @@
 <?php
 
-namespace think\admin\service;
+namespace app\admin\service;
 
 use think\admin\extend\HttpExtend;
 use think\admin\extend\Parsedown;
 use think\admin\Library;
 use think\admin\Service;
+use think\admin\service\NodeService;
 
 /**
  * 系统模块管理
@@ -42,6 +43,19 @@ class ModuleService extends Service
         $this->server = 'http://342y6324w6.qicp.vip:8088';
     }
 
+    //远程get请求
+    private function get($uri, $query = [])
+    {
+        $query['domain'] = $this->app->request->host(true);
+        return json_decode(HttpExtend::get($this->server . $uri, $query), true);
+    }
+
+    private function post($uri, $query = [])
+    {
+        $query['domain'] = $this->app->request->host(true);
+        return json_decode(HttpExtend::post($this->server . $uri, $query), true);
+    }
+
     /**
      * 获取服务端地址
      * @return string
@@ -69,8 +83,9 @@ class ModuleService extends Service
         $online = $this->online();
         if (isset($online['code']) && $online['code'] > 0) {
             $locals = $this->getModules();
-            foreach ($online['data'] as &$item) if (isset($locals[$item['name']])) {
-                $item['local'] = $locals[$item['name']];
+
+            foreach ($online['data'] as $key => &$item) if (isset($locals[$key])) {
+                $item['local'] = $locals[$key];
                 if ($item['local']['version'] < $item['version']) {
                     $item['type_code'] = 2;
                     $item['type_desc'] = '需要更新';
@@ -100,7 +115,7 @@ class ModuleService extends Service
                 'data' => $data
             ];
         }
-        $result = json_decode(HttpExtend::get($this->server . '/index/update/version'), true);
+        $result = $this->get('/index/update/version');
         if (isset($result['code'])) {
             if ($result['code'] > 0 && isset($result['data']) && is_array($result['data'])) {
                 $this->app->cache->set('moduleOnlineData', $result['data'], 30);
@@ -120,13 +135,17 @@ class ModuleService extends Service
      * @param string $name 模块名称
      * @return array
      */
-    public function install($name): array
+    public function install(string $name): array
     {
         $this->app->cache->set('moduleOnlineData', []);
-        $data = $this->grenerateDifference(['app' . '/' . $name]);
-        if (empty($data)) return [0, '没有需要安装的文件', []];
+        $data = $this->generateDifference($name, [
+            'database' => 'database/migrations',
+            'src' => 'app/' . $name,
+            'static' => 'public/static/' . $name
+        ]);
+        if (empty($data[0])) return [0, isset($data[1]) ? $data[1] : '没有需要安装的文件', []];
         $lines = [];
-        foreach ($data as $file) {
+        foreach ($data[1] as $file) {
             [$state, $mode, $name] = $this->updateFileByDownload($file);
             if ($state) {
                 if ($mode === 'add') $lines[] = "add {$name} successed";
@@ -152,10 +171,12 @@ class ModuleService extends Service
         foreach ($service->getModules() as $name) {
             $vars = $this->_getModuleVersion($name);
             if (is_array($vars) && isset($vars['version']) && preg_match('|^\d{4}\.\d{2}\.\d{2}\.\d{2}$|', $vars['version'])) {
-                $data[$name] = array_merge($vars, ['change' => []]);
-                foreach ($service->scanDirectory($this->_getModuleInfoPath($name) .'database'.DIRECTORY_SEPARATOR. 'change', [], 'md') as $file) {
+                $data[$name] = $vars;
+                /*$data[$name] = array_merge($vars, ['change' => []]);
+                foreach ($service->scanDirectory($this->_getModuleInfoPath($name) . 'database' . DIRECTORY_SEPARATOR . 'change', [], 'md') as $file) {
                     $data[$name]['change'][pathinfo($file, PATHINFO_FILENAME)] = Parsedown::instance()->parse(file_get_contents($file));
                 }
+                */
             }
         }
         return $data;
@@ -167,6 +188,7 @@ class ModuleService extends Service
      * @param array $ignore 忽略规则
      * @param array $data 扫描结果列表
      * @return array
+     * @deprecated 已废弃
      */
     public function getChanges(array $rules, array $ignore = [], array $data = []): array
     {
@@ -181,6 +203,30 @@ class ModuleService extends Service
         }
         // 返回文件数据
         return ['rules' => $rules, 'ignore' => $ignore, 'list' => $data];
+    }
+
+    /**
+     * 获取文件信息列表
+     * @param string $name
+     * @param array $rules 文件规则
+     * @param array $ignore 忽略规则
+     * @param array $data 扫描结果列表
+     * @return array
+     */
+    public function getChangeList(string $name, array $rules, array $ignore = [], array $data = []): array
+    {
+        $list = [];
+        // 扫描规则文件
+        foreach ($rules as $key => $rule) {
+            $path = $this->root . strtr(trim($rule, '\\/'), '\\', '/');
+            $list[$key] = $this->_scanLocalFileHashList($path);
+        }
+        // 清除忽略文件
+        foreach ($data as $key => $item) foreach ($ignore as $ign) {
+            if (stripos($item['name'], $ign) === 0) unset($data[$key]);
+        }
+        // 返回文件数据
+        return ['rules' => $rules, 'ignore' => $ignore, 'list' => $list];
     }
 
     /**
@@ -208,24 +254,28 @@ class ModuleService extends Service
 
     /**
      * 获取文件差异数据
+     * @param $name //名称标识
      * @param array $rules 查询规则
      * @param array $ignore 忽略规则
      * @param array $result 差异数据
      * @return array
      */
-    public function grenerateDifference(array $rules = [], array $ignore = [], array $result = []): array
+    public function generateDifference($name, array $rules = [], array $ignore = [], array $result = []): array
     {
-        $online = json_decode(HttpExtend::post($this->server . '/index/update/node', [
-            'rules' => json_encode($rules), 'ignore' => json_encode($ignore),
-        ]), true);
-        if (empty($online['code'])) return $result;
-        $change = $this->getChanges($online['data']['rules'] ?? [], $online['data']['ignore'] ?? []);
-        foreach ($this->_grenerateDifferenceContrast($online['data']['list'], $change['list']) as $file) {
+        $online = $this->post('/index/update/node', [
+            'name' => $name,
+            'rules' => json_encode($rules),
+            'ignore' => json_encode($ignore),
+        ]);
+        if (empty($online['code'])) return [0, $online['info']];
+        $change = $this->getChangeList($name, $online['data']['rules'] ?? [], $online['data']['ignore'] ?? []);
+
+        foreach ($this->_grenerateDifferenceContrast($name, $online['data']['list'], $change['list']) as $file) {
             if (in_array($file['type'], ['add', 'del', 'mod'])) foreach ($rules as $rule) {
-                if (stripos($file['name'], $rule) === 0) $result[] = $file;
+                if (stripos($file['local'], $rule) === 0) $result[] = $file;
             }
         }
-        return $result;
+        return [1, $result];
     }
 
     /**
@@ -236,18 +286,18 @@ class ModuleService extends Service
     public function updateFileByDownload(array $file): array
     {
         if (in_array($file['type'], ['add', 'mod'])) {
-            if ($this->_downloadUpdateFile(encode($file['name']))) {
-                return [true, $file['type'], $file['name']];
+            if ($this->_downloadUpdateFile($file['local'], encode($file['serve']))) {
+                return [true, $file['type'], $file['local']];
             } else {
-                return [false, $file['type'], $file['name']];
+                return [false, $file['type'], $file['local']];
             }
         } elseif (in_array($file['type'], ['del'])) {
-            $real = $this->root . $file['name'];
+            $real = $this->root . $file['local'];
             if (is_file($real) && unlink($real)) {
                 $this->_removeEmptyDirectory(dirname($real));
-                return [true, $file['type'], $file['name']];
+                return [true, $file['type'], $file['local']];
             } else {
-                return [false, $file['type'], $file['name']];
+                return [false, $file['type'], $file['local']];
             }
         }
     }
@@ -260,7 +310,7 @@ class ModuleService extends Service
     {
         $data = $this->app->cache->get('moduleAllowDownloadRule', []);
         if (is_array($data) && count($data) > 0) return $data;
-        $data = ['think', 'config', 'public/static', 'public/router.php', 'public/index.php'];
+        $data = ['think', 'config', 'public/static', 'public/router.php', 'public/index.php', 'database/migrations', 'app'];
         foreach (array_keys($this->getModules()) as $name) $data[] = 'app/' . $name;
         $this->app->cache->set('moduleAllowDownloadRule', $data, 30);
         return $data;
@@ -268,18 +318,20 @@ class ModuleService extends Service
 
     /**
      * 获取模块版本信息
-     * @param string $name 模块名称
+     * @param string $identifier
      * @return bool|array|null
      */
-    private function _getModuleVersion(string $name)
+    private function _getModuleVersion(string $identifier)
     {
-        $filename = $this->_getModuleInfoPath($name) . 'manifest.php';
+        $filename = $this->_getModuleInfoPath($identifier) . 'manifest.php';
         if (file_exists($filename) && is_file($filename) && is_readable($filename)) {
             $_manifest = include($filename);
-            if (isset($_manifest['application']['identifier']) && isset($_manifest['application']['version'])) {
+            if (isset($_manifest['application']['name']) && isset($_manifest['application']['version'])) {
                 return [
-                    'name' => $_manifest['application']['identifier'],
+                    'name' => $_manifest['application']['name'],
+                    'identifier' => $identifier,
                     'version' => $_manifest['application']['version'],
+                    'package' => isset($_manifest['application']['package']) ? $_manifest['application']['package'] : '',
                     'author' => isset($_manifest['application']['author']) ? $_manifest['application']['author'] : '',
                     'content' => isset($_manifest['application']['description']) ? $_manifest['application']['description'] : ''
                 ];
@@ -294,15 +346,15 @@ class ModuleService extends Service
 
     /**
      * 下载更新文件内容
+     * @param string $local
      * @param string $encode
      * @return boolean|integer
      */
-    private function _downloadUpdateFile(string $encode)
+    private function _downloadUpdateFile(string $local, string $encode)
     {
-        $source = $this->server . '/index/update/get?encode=' . $encode;
-        $result = json_decode(HttpExtend::get($source), true);
+        $result = $this->get('/index/update/get?encode=' . $encode);
         if (empty($result['code'])) return false;
-        $filename = $this->root . decode($encode);
+        $filename = $this->root . $local;
         file_exists(dirname($filename)) || mkdir(dirname($filename), 0755, true);
         return file_put_contents($filename, base64_decode($result['data']['content']));
     }
@@ -330,22 +382,50 @@ class ModuleService extends Service
 
     /**
      * 根据线上线下生成操作数组
+     * @param string $name
      * @param array $serve 线上文件数据
      * @param array $local 本地文件数据
      * @param array $diffy 计算结果数据
      * @return array
      */
-    private function _grenerateDifferenceContrast(array $serve = [], array $local = [], array $diffy = []): array
+    private function _grenerateDifferenceContrast(string $name, array $serve = [], array $local = [], array $diffy = []): array
     {
-        $serve = array_combine(array_column($serve, 'name'), array_column($serve, 'hash'));
-        $local = array_combine(array_column($local, 'name'), array_column($local, 'hash'));
-        foreach ($serve as $name => $hash) {
-            $type = isset($local[$name]) ? ($hash === $local[$name] ? null : 'mod') : 'add';
-            $diffy[$name] = ['type' => $type, 'name' => $name];
+        $diffy = [];
+        $local_path = [
+            'src' => 'app/' . $name,
+            'database' => 'database/migrations',
+            'static' => 'public/static/' . $name
+        ];
+        foreach ($serve as $key => $val) {
+            $_serve = array_combine(array_column($val, 'name'), $val);
+            $_local = array_combine(array_column($local[$key], 'name'), $local[$key]);
+            foreach ($_serve as $name => $_v) {
+                if (isset($_local[$name])) {
+                    $_l = $_local[$name];
+                    if ($_v['hash'] !== $_l['hash']) {
+                        $diffy[$name] = [
+                            'type' => 'mod',
+                            'local' => isset($_l['file']) ? $_l['file'] : null,
+                            'serve' => isset($_v['file']) ? $_v['file'] : null
+                        ];
+                    }
+                } else {
+                    $diffy[$name] = [
+                        'type' => 'add',
+                        'local' => $local_path[$key] . $name,
+                        'serve' => isset($_v['file']) ? $_v['file'] : null
+                    ];
+                }
+            }
+            foreach ($_local as $name => $_l) if (!isset($_serve[$name])) {
+                $diffy[$name] = [
+                    'type' => 'del',
+                    'local' => isset($_l['file']) ? $_l['file'] : null,
+                    'serve' => null
+                ];
+            }
         }
-        foreach ($local as $name => $hash) if (!isset($serve[$name])) {
-            $diffy[$name] = ['type' => 'del', 'name' => $name];
-        }
+
         ksort($diffy);
         return array_values($diffy);
     }
@@ -359,8 +439,12 @@ class ModuleService extends Service
     private function _scanLocalFileHashList(string $path, array $data = []): array
     {
         foreach (NodeService::instance()->scanDirectory($path, [], null) as $file) {
-            if ($this->checkAllowDownload($name = substr($file, strlen($this->root)))) {
-                $data[] = ['name' => $name, 'hash' => md5(preg_replace('/\s+/', '', file_get_contents($file)))];
+            if ($this->checkAllowDownload($_file = substr($file, strlen($this->root)))) {
+                $data[] = [
+                    'name' => substr($file, strlen($path)),
+                    'hash' => md5(preg_replace('/\s+/', '', file_get_contents($file))),
+                    'file' => $_file
+                ];
             }
         }
         return $data;
