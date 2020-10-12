@@ -1,6 +1,6 @@
 <?php
-
-namespace app\admin\service;
+declare (strict_types=1);
+namespace think\admin\service;
 
 use think\admin\extend\HttpExtend;
 use think\admin\extend\Parsedown;
