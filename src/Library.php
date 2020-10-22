@@ -41,19 +41,22 @@ class Library extends Service
     /**
      * 扩展库版本号
      */
-    const VERSION = '6.0.16';
+    const VERSION = '6.0.17';
 
     /**
      * 启动服务
      */
     public function boot()
     {
-        // 多应用中间键
-        $this->app->event->listen('HttpRun', function () {
-            $this->app->request->baseUrl(); /* 解决 HTTP 调用指令 URL 问题 */
+        // 多应用中间键处理
+        $this->app->event->listen('HttpRun', function (Request $request) {
             $this->app->middleware->add(App::class);
+            // 解决 HTTP 调用 Console 之后 URL 问题
+            if (!$this->app->request->isCli()) {
+                $request->setHost($request->host());
+            }
         });
-        // 替换 ThinkPHP 地址处理
+        // 替换 ThinkPHP 地址
         $this->app->bind('think\route\Url', Url::class);
         // 替换 ThinkPHP 指令
         $this->commands(['build' => Build::class, 'clear' => Clear::class]);
