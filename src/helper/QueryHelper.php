@@ -57,6 +57,13 @@ class QueryHelper extends Helper
         return $this;
     }
 
+    public function keywords($fields, $Key = 'keywords', $input = 'request') {
+        $Keywords = trim($this->app->request->$input($Key));
+        if ($fields != '' && $Keywords != '')
+            $this->query->where($fields, 'LIKE', "%{$Keywords}%");
+        return $this;
+    }
+
     /**
      * 设置 Like 查询条件
      * @param string|array $fields 查询字段
