@@ -58,7 +58,8 @@ class QueryHelper extends Helper
     }
 
     public function keywords($fields, $Key = 'keywords', $input = 'request') {
-        $Keywords = trim($this->app->request->$input($Key));
+        if( ($Keywords = $this->app->request->$input($Key)) == null) return $this;
+        $Keywords = trim($Keywords);
         if ($fields != '' && $Keywords != '')
             $this->query->where($fields, 'LIKE', "%{$Keywords}%");
         return $this;
