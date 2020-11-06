@@ -18,7 +18,9 @@ declare (strict_types=1);
 namespace think\admin\service;
 
 use think\admin\Service;
+use think\App;
 use think\db\Query;
+use think\helper\Str;
 
 /**
  * 系统参数管理服务
@@ -142,9 +144,11 @@ class SystemService extends Service
      */
     public function sysuri(string $url = '', array $vars = [], $suffix = true, $domain = false): string
     {
-        $location = $this->app->route->buildUrl($url, $vars)->suffix($suffix)->domain($domain)->build();
-        [$d1, $d2, $d3] = [$this->app->config->get('app.default_app'), $this->app->config->get('route.default_controller'), $this->app->config->get('route.default_action')];
-        return preg_replace('|/\.html$|', '', preg_replace(["|^/{$d1}/{$d2}/{$d3}(\.html)?$|i", "|/{$d2}/{$d3}(\.html)?$|i", "|/{$d3}(\.html)?$|i"], ['$1', '$1', '$1'], $location));
+        $hm = $this->app->config->get('route.url_html_suffix', '.html');
+        $d2 = Str::snake($this->app->config->get('route.default_controller'));
+        [$d1, $d3] = [$this->app->config->get('app.default_app'), $this->app->config->get('route.default_action')];
+        $pattern = ["#^/{$d1}/{$d2}/{$d3}({$hm})?#i", "#^(/.*?)/{$d2}/{$d3}(^\w|\?|\.|$)#i", "#^(/.*?/.*?)/{$d3}(^\w|\?|\.|$)#i"];
+        return preg_replace($pattern, ['', '$1$2', '$1$2'], $this->app->route->buildUrl($url, $vars)->suffix($suffix)->domain($domain)->build());
     }
 
     /**
@@ -236,92 +240,6 @@ class SystemService extends Service
     }
 
     /**
-     * 判断实时运行模式
-     * @return boolean
-     */
-    public function isDebug(): bool
-    {
-        return $this->getRuntime('run') !== 'product';
-    }
-
-    /**
-     * 设置运行环境模式
-     * @param null|boolean $state
-     * @return boolean
-     */
-    public function productMode(?bool $state = null): bool
-    {
-        if (is_null($state)) {
-            return $this->bindRuntime();
-        } else {
-            return $this->setRuntime([], $state ? 'product' : 'debug');
-        }
-    }
-
-    /**
-     * 获取实时运行配置
-     * @param null|string $name 配置名称
-     * @param array $default 配置内容
-     * @return array|string
-     */
-    public function getRuntime(?string $name = null, array $default = [])
-    {
-        $filename = "{$this->app->getRootPath()}runtime/config.json";
-        if (file_exists($filename) && is_file($filename)) {
-            $data = json_decode(file_get_contents($filename), true);
-        }
-        if (empty($data) || !is_array($data)) $data = [];
-        if (empty($data['map']) || !is_array($data['map'])) $data['map'] = [];
-        if (empty($data['uri']) || !is_array($data['uri'])) $data['uri'] = [];
-        if (empty($data['run']) || !is_string($data['run'])) $data['run'] = 'debug';
-        return is_null($name) ? $data : ($data[$name] ?? $default);
-    }
-
-    /**
-     * 设置实时运行配置
-     * @param null|array $map 应用映射
-     * @param null|mixed $run 支持模式
-     * @param null|array $uri 域名映射
-     * @return boolean 是否调试模式
-     */
-    public function setRuntime(?array $map = [], ?string $run = null, ?array $uri = []): bool
-    {
-        $data = $this->getRuntime();
-        $data['run'] = is_string($run) ? $run : $data['run'];
-        $data['map'] = $this->uniqueArray($data['map'], $map);
-        $data['uri'] = $this->uniqueArray($data['uri'], $uri);
-        $filename = "{$this->app->getRootPath()}runtime/config.json";
-        file_put_contents($filename, json_encode($data, JSON_UNESCAPED_UNICODE));
-        return $this->bindRuntime($data);
-    }
-
-    /**
-     * 绑定应用实时配置
-     * @param array $data 配置数据
-     * @return boolean 是否调试模式
-     */
-    public function bindRuntime(array $data = []): bool
-    {
-        if (empty($data)) $data = $this->getRuntime();
-        $bind['app_map'] = $this->app->config->get('app.app_map', []);
-        $bind['domain_bind'] = $this->app->config->get('app.domain_bind', []);
-        if (count($data['map']) > 0) $bind['app_map'] = $this->uniqueArray($bind['app_map'], $data['map']);
-        if (count($data['uri']) > 0) $bind['domain_bind'] = $this->uniqueArray($bind['domain_bind'], $data['uri']);
-        $this->app->config->set($bind, 'app');
-        return $this->app->debug($data['run'] !== 'product')->isDebug();
-    }
-
-    /**
-     * 获取唯一数组参数
-     * @param array ...$args
-     * @return array
-     */
-    private function uniqueArray(...$args): array
-    {
-        return array_unique(array_reverse(array_merge(...$args)));
-    }
-
-    /**
      * 压缩发布项目
      */
     public function pushRuntime(): void
@@ -342,17 +260,91 @@ class SystemService extends Service
     {
         $data = $this->getRuntime();
         $this->app->console->call('clear');
-        $this->setRuntime($data['map'], $data['run'], $data['uri']);
+        $this->setRuntime($data['mode'], $data['appmap'], $data['domain']);
     }
 
     /**
-     * 初始化并运行应用
-     * @param \think\App $app
+     * 判断实时运行模式
+     * @return boolean
      */
-    public function doInit(\think\App $app): void
+    public function isDebug(): bool
     {
-        $app->debug($this->isDebug());
-        ($response = $app->http->run())->send();
-        $app->http->end($response);
+        return $this->getRuntime('mode') !== 'product';
+    }
+
+    /**
+     * 设置实时运行配置
+     * @param null|mixed $mode 支持模式
+     * @param null|array $appmap 应用映射
+     * @param null|array $domain 域名映射
+     * @return boolean 是否调试模式
+     */
+    public function setRuntime(?string $mode = null, ?array $appmap = [], ?array $domain = []): bool
+    {
+        $data = $this->getRuntime();
+        $data['mode'] = $mode ?: $data['mode'];
+        $data['appmap'] = $this->uniqueArray($data['appmap'], $appmap);
+        $data['domain'] = $this->uniqueArray($data['domain'], $domain);
+        // 组装配置文件格式
+        $rows[] = "mode = {$data['mode']}";
+        foreach ($data['appmap'] as $key => $item) $rows[] = "appmap[{$key}] = {$item}";
+        foreach ($data['domain'] as $key => $item) $rows[] = "domain[{$key}] = {$item}";
+        $filename = $this->app->getRootPath() . 'runtime/.env';
+        file_put_contents($filename, "[RUNTIME]\n" . join("\n", $rows));
+        return $this->bindRuntime($data);
+    }
+
+    /**
+     * 获取实时运行配置
+     * @param null|string $name 配置名称
+     * @param array $default 配置内容
+     * @return array|string
+     */
+    public function getRuntime(?string $name = null, array $default = [])
+    {
+        $filename = $this->app->getRootPath() . 'runtime/.env';
+        if (file_exists($filename)) $this->app->env->load($filename);
+        $data = [
+            'mode'   => $this->app->env->get('RUNTIME_MODE') ?: 'debug',
+            'appmap' => $this->app->env->get('RUNTIME_APPMAP') ?: [],
+            'domain' => $this->app->env->get('RUNTIME_DOMAIN') ?: [],
+        ];
+        return is_null($name) ? $data : ($data[$name] ?? $default);
+    }
+
+    /**
+     * 绑定应用实时配置
+     * @param array $data 配置数据
+     * @return boolean 是否调试模式
+     */
+    public function bindRuntime(array $data = []): bool
+    {
+        if (empty($data)) $data = $this->getRuntime();
+        $bind['app_map'] = $this->uniqueArray($this->app->config->get('app.app_map', []), $data['appmap']);
+        $bind['domain_bind'] = $this->uniqueArray($this->app->config->get('app.domain_bind', []), $data['domain']);
+        $this->app->config->set($bind, 'app');
+        return $this->app->debug($data['mode'] !== 'product')->isDebug();
+    }
+
+    /**
+     * 初始化并运行主程序
+     * @param null|\think\App $app
+     */
+    public function doInit(?\think\App $app = null): void
+    {
+        $this->app = $app ?: $this->app;
+        $this->app->debug($this->isDebug());
+        ($response = $this->app->http->run())->send();
+        $this->app->http->end($response);
+    }
+
+    /**
+     * 获取唯一数组参数
+     * @param array ...$args
+     * @return array
+     */
+    private function uniqueArray(...$args): array
+    {
+        return array_unique(array_reverse(array_merge(...$args)));
     }
 }
