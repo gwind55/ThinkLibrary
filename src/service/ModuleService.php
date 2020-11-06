@@ -323,25 +323,27 @@ class ModuleService extends Service
      */
     private function _getModuleVersion(string $identifier)
     {
-        $filename = $this->_getModuleInfoPath($identifier) . 'manifest.php';
-        if (file_exists($filename) && is_file($filename) && is_readable($filename)) {
-            $_manifest = include($filename);
-            if (isset($_manifest['application']['name']) && isset($_manifest['application']['version'])) {
-                return [
-                    'name' => $_manifest['application']['name'],
-                    'identifier' => $identifier,
-                    'version' => $_manifest['application']['version'],
-                    'package' => isset($_manifest['application']['package']) ? $_manifest['application']['package'] : '',
-                    'author' => isset($_manifest['application']['author']) ? $_manifest['application']['author'] : '',
-                    'content' => isset($_manifest['application']['description']) ? $_manifest['application']['description'] : ''
-                ];
-            } else {
-                return null;
-            }
-
-        } else {
-            return false;
+        $_manifest = $this->getManifest($identifier);
+        if (!empty($_manifest) && isset($_manifest['application']['identifier']) && isset($_manifest['application']['version'])) {
+            return [
+                'name' => $_manifest['application']['name'],
+                'identifier' => $_manifest['application']['identifier'],
+                'version' => $_manifest['application']['version'],
+                'package' => isset($_manifest['application']['package']) ? $_manifest['application']['package'] : '',
+                'author' => isset($_manifest['application']['author']) ? $_manifest['application']['author'] : '',
+                'content' => isset($_manifest['application']['description']) ? $_manifest['application']['description'] : ''
+            ];
         }
+        return null;
+    }
+
+    public function getManifest(string $name)
+    {
+        $filename = $this->_getModuleInfoPath($name) . 'manifest.php';
+        if (file_exists($filename) && is_file($filename) && is_readable($filename)) {
+            return include($filename);
+        }
+        return null;
     }
 
     /**
