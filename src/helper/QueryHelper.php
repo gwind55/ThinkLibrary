@@ -57,7 +57,7 @@ class QueryHelper extends Helper
         return $this;
     }
 
-		public function keywords($fields, $Key = 'keywords', $input = 'request') {
+    public function keywords($fields, $Key = 'keywords', $input = 'request') {
         if( ($Keywords = $this->app->request->$input($Key)) == null) return $this;
         $Keywords = trim($Keywords);
         if ($fields != '' && $Keywords != '')
